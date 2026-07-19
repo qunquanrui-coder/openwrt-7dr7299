@@ -12,18 +12,20 @@ cp -rf "$GOLANG126_SRC_DIR/." "$GOLANG126_FEED_DIR/"
 ./scripts/feeds update -f packages
 ./scripts/feeds install golang1.26
 
-# daed 使用 golang1.26/host
-# PassWall 已移除，不再扫描 package/passwall-packages
-if [ -d package/dae ]; then
-  find package/dae -name "Makefile" -type f -exec sed -i \
-    -e 's|\<golang/golang-package.mk\>|golang1.26/golang-package.mk|g' \
-    -e 's|\<golang/host\>|golang1.26/host|g' {} +
-fi
+# 保持原作者的构建方式：
+# Daed 和 PassWall Packages 内的 Go 程序统一使用 golang1.26/host。
+for package_dir in package/dae package/passwall-packages; do
+  if [ -d "$package_dir" ]; then
+    find "$package_dir" -name "Makefile" -type f -exec sed -i \
+      -e 's|\<golang/golang-package.mk\>|golang1.26/golang-package.mk|g' \
+      -e 's|\<golang/host\>|golang1.26/host|g' {} +
+  fi
+done
 
-# 同步仓库内维护的 patches 目录到 OpenWrt 源码树
-if [ -d "$GITHUB_WORKSPACE/patches/6.6" ]; then
+# 同步仓库内维护的 6.6 patches 到 OpenWrt 源码树
+if [ -d "$WORKSPACE_ROOT/patches/6.6" ]; then
   echo "[diy] 同步自定义 patches/6.6 目录到源码树"
-  cp -rf "$GITHUB_WORKSPACE/patches/6.6/." ./
+  cp -rf "$WORKSPACE_ROOT/patches/6.6/." ./
 else
   echo "[diy] patches/6.6 目录不存在，跳过"
 fi
