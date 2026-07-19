@@ -19,7 +19,7 @@ rm -rf \
   package/feeds/luci/luci-app-dae \
   package/feeds/luci/luci-app-daed
 
-# 移除 PassWall 及旧 SSR Plus 源
+# 移除 PassWall、旧 SSR Plus 以及此前检出的源码目录
 rm -rf \
   feeds/luci/applications/luci-app-passwall \
   package/feeds/luci/luci-app-passwall \
@@ -32,12 +32,19 @@ rm -rf \
 
 # 克隆普通第三方插件源
 clone_if_missing() {
-  local repo="$1" branch="$2" dest="$3"
+  local repo="$1"
+  local branch="$2"
+  local dest="$3"
+
   if [ -d "$dest" ]; then
     echo "[diy] 跳过已存在的仓库: $dest"
   else
     echo "[diy] 克隆: $repo -> $dest"
-    git clone --depth=1 ${branch:+-b "$branch"} "$repo" "$dest"
+    if [ -n "$branch" ]; then
+      git clone --depth=1 -b "$branch" "$repo" "$dest"
+    else
+      git clone --depth=1 "$repo" "$dest"
+    fi
   fi
 }
 
@@ -50,11 +57,14 @@ clone_if_missing https://github.com/QiuSimons/luci-app-daed        "" package/da
 clone_if_missing https://github.com/EasyTier/luci-app-easytier.git "" package/luci-app-easytier
 
 # 获取带“组件升级”页面的 ShadowSocksR Plus+ 196
-# 只稀疏检出 luci-app-ssr-plus，依赖包使用当前 ImmortalWrt feeds
+# 稀疏检出 SSR Plus 界面和 SSR Libev 运行核心
 echo "[diy] 克隆 kenzok8/small-package 的 ShadowSocksR Plus+"
 git clone --depth=1 --filter=blob:none --sparse \
   https://github.com/kenzok8/small-package.git package/small-package
-git -C package/small-package sparse-checkout set luci-app-ssr-plus
+
+git -C package/small-package sparse-checkout set \
+  luci-app-ssr-plus \
+  shadowsocksr-libev
 
 # Daed Web UI 修正
 if [ -f package/dae/daed/Makefile ]; then
