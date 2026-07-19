@@ -22,7 +22,9 @@ CONFIG_PACKAGE_luci-app-argon-config=n
 CONFIG_PACKAGE_luci-i18n-argon-config-zh-cn=n
 
 # ---------------------------------------------------------
-# ShadowSocksR Plus+（完整界面 + Xray/VLESS + 组件升级）
+# ShadowSocksR Plus+
+# 完整界面、Xray/VLESS、SSR 客户端、组件升级
+# 底层代理核心统一来自 openwrt-passwall-packages
 # ---------------------------------------------------------
 CONFIG_PACKAGE_luci-app-ssr-plus=y
 CONFIG_PACKAGE_luci-i18n-ssr-plus-zh-cn=y
@@ -31,23 +33,19 @@ CONFIG_PACKAGE_luci-i18n-ssr-plus-zh-cn=y
 CONFIG_PACKAGE_luci-app-ssr-plus_Nftables_Transparent_Proxy=y
 # CONFIG_PACKAGE_luci-app-ssr-plus_Iptables_Transparent_Proxy is not set
 
-# 启用 Xray 核心：支持 VLESS / VMess / Trojan
+# Xray：支持 VLESS、VMess、Trojan
 CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_Xray=y
 # CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_NONE_V2RAY is not set
-CONFIG_PACKAGE_xray-core=y
 
-# 保留 SSR 客户端
-CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_ShadowsocksR_Libev_Client=y
-# CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_ShadowsocksR_Libev_Server is not set
-
-# 不额外编入普通 Shadowsocks，减少体积
+# 不编入普通 Shadowsocks 客户端和服务端
 CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_Shadowsocks_NONE_Client=y
 CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_Shadowsocks_NONE_Server=y
 # CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_Shadowsocks_Rust_Client is not set
 # CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_Shadowsocks_Rust_Server is not set
 
-# DNS2TCP 是 SSR Plus 基础依赖，可显示截图中的 DNS2TCP 查询
-CONFIG_PACKAGE_dns2tcp=y
+# SSR Libev 客户端
+CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_ShadowsocksR_Libev_Client=y
+# CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_ShadowsocksR_Libev_Server is not set
 
 # 关闭不需要的大型或附加组件
 # CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_ChinaDNS_NG is not set
@@ -61,16 +59,16 @@ CONFIG_PACKAGE_dns2tcp=y
 # CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_Shadowsocks_Simple_Obfs is not set
 # CONFIG_PACKAGE_luci-app-ssr-plus_INCLUDE_Shadowsocks_V2ray_Plugin is not set
 
-# 不启用 PassWall
-CONFIG_PACKAGE_luci-app-passwall=n
+# 不编译 PassWall LuCI 界面
+# CONFIG_PACKAGE_luci-app-passwall is not set
 
 # ---------------------------------------------------------
-# Daed
+# Daed（保持原作者已验证的配置）
 # ---------------------------------------------------------
-# CONFIG_PACKAGE_luci-app-daed=y
-# CONFIG_PACKAGE_luci-i18n-daed-zh-cn=y
-# CONFIG_PACKAGE_v2ray-geoip=y
-# CONFIG_PACKAGE_v2ray-geosite=y
+CONFIG_PACKAGE_luci-app-daed=y
+CONFIG_PACKAGE_luci-i18n-daed-zh-cn=y
+CONFIG_PACKAGE_v2ray-geoip=y
+CONFIG_PACKAGE_v2ray-geosite=y
 
 # ---------------------------------------------------------
 # EasyTier
