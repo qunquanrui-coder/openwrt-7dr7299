@@ -3,6 +3,10 @@ set -e -o pipefail
 
 echo "=== diy-script: 开始自定义编译配置 ==="
 
+# 固定第三方组件提交，避免上游更新后出现无法复现的编译问题
+PASSWALL_PACKAGES_COMMIT="9d391e568d61c43be683b747b9ede811a61fc315"
+SMALL_PACKAGE_COMMIT="33b50ac98ad0ffc20144a8a09c9c5a364eb1ef6c"
+
 # 修改默认 IP 和 root 默认密码
 echo "[diy] 修改默认 IP 为 192.168.123.1"
 sed -i 's/192.168.6.1/192.168.123.1/g' package/base-files/files/bin/config_generate
@@ -19,11 +23,10 @@ rm -rf \
   package/feeds/luci/luci-app-dae \
   package/feeds/luci/luci-app-daed
 
-# 保持原作者已验证的 PassWall Packages 依赖体系：
-# 先移除 feeds 内同名代理核心，再统一使用 openwrt-passwall-packages。
+# 代理核心统一由 openwrt-passwall-packages 提供
 rm -rf feeds/packages/net/{xray-core,v2ray-geodata,sing-box,chinadns-ng,dns2socks,hysteria,ipt2socks,microsocks,naiveproxy,shadowsocks-rust,shadowsocksr-libev,simple-obfs,tcping,v2ray-plugin,xray-plugin,geoview,shadow-tls,haproxy}
 
-# 不编译 PassWall 界面；移除旧 SSR Plus 和以前检出的第三方目录
+# 移除 PassWall 界面、Daed 和旧 SSR Plus 目录
 rm -rf \
   feeds/luci/applications/luci-app-passwall \
   package/feeds/luci/luci-app-passwall \
@@ -32,7 +35,8 @@ rm -rf \
   package/passwall-packages \
   package/passwall-luci \
   package/helloworld \
-  package/small-package
+  package/small-package \
+  package/dae
 
 clone_if_missing() {
   local repo="$1"
@@ -51,33 +55,55 @@ clone_if_missing() {
   fi
 }
 
+clone_exact_commit() {
+  local repo="$1"
+  local commit="$2"
+  local dest="$3"
+
+  echo "[diy] 克隆并锁定: $repo @ $commit -> $dest"
+  rm -rf "$dest"
+  git init "$dest"
+  git -C "$dest" remote add origin "$repo"
+  git -C "$dest" fetch --depth=1 origin "$commit"
+  git -C "$dest" checkout --detach FETCH_HEAD
+}
+
+clone_sparse_exact_commit() {
+  local repo="$1"
+  local commit="$2"
+  local dest="$3"
+  shift 3
+
+  echo "[diy] 稀疏克隆并锁定: $repo @ $commit -> $dest"
+  rm -rf "$dest"
+  git init "$dest"
+  git -C "$dest" remote add origin "$repo"
+  git -C "$dest" sparse-checkout init --cone
+  git -C "$dest" sparse-checkout set "$@"
+  git -C "$dest" fetch --depth=1 origin "$commit"
+  git -C "$dest" checkout --detach FETCH_HEAD
+}
+
 # 普通第三方应用
 clone_if_missing https://github.com/sbwml/luci-app-mosdns          "" package/luci-app-mosdns
 clone_if_missing https://github.com/ximiTech/luci-app-msd_lite     "" package/luci-app-msd_lite
 clone_if_missing https://github.com/ximiTech/msd_lite              "" package/msd_lite
 clone_if_missing https://github.com/pymumu/luci-app-smartdns       "" package/luci-app-smartdns
 clone_if_missing https://github.com/pymumu/openwrt-smartdns        "" package/smartdns
-clone_if_missing https://github.com/QiuSimons/luci-app-daed        "" package/dae
 clone_if_missing https://github.com/EasyTier/luci-app-easytier.git "" package/luci-app-easytier
 
-# Xray、SSR Libev、ipt2socks、microsocks 等代理核心统一来自同一个仓库。
-# 这里只使用 packages，不克隆和不编译 PassWall LuCI 界面。
-clone_if_missing \
+# Xray、SSR Libev、ipt2socks、microsocks 等核心
+clone_exact_commit \
   https://github.com/Openwrt-Passwall/openwrt-passwall-packages \
-  "" \
+  "$PASSWALL_PACKAGES_COMMIT" \
   package/passwall-packages
 
-# SSR Plus 只取 LuCI 界面，不再从 small-package 重复获取 shadowsocksr-libev。
-echo "[diy] 克隆带组件升级页面的 ShadowSocksR Plus+"
-git clone --depth=1 --filter=blob:none --sparse \
-  https://github.com/kenzok8/small-package.git package/small-package
-git -C package/small-package sparse-checkout set luci-app-ssr-plus
-
-# Daed Web UI 修正
-if [ -f package/dae/daed/Makefile ]; then
-  sed -i '/^GO_PKG:=github.com\/daeuniverse\/dae-wing$/a GO_PKG_INSTALL_EXTRA:=webrender/web' \
-    package/dae/daed/Makefile
-fi
+# SSR Plus 只取 LuCI 界面，不重复获取 shadowsocksr-libev
+clone_sparse_exact_commit \
+  https://github.com/kenzok8/small-package.git \
+  "$SMALL_PACKAGE_COMMIT" \
+  package/small-package \
+  luci-app-ssr-plus
 
 # 修改版本为编译日期
 DATE_VERSION="$(date +%Y.%m.%d)"
