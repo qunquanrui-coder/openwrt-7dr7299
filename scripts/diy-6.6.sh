@@ -4,16 +4,21 @@ set -e -o pipefail
 WORKSPACE_ROOT="${GITHUB_WORKSPACE:-$(pwd)}"
 GOLANG126_SRC_DIR="$WORKSPACE_ROOT/scripts/6.6/golang1.26"
 GOLANG126_FEED_DIR="feeds/packages/lang/golang1.26"
+
 rm -rf "$GOLANG126_FEED_DIR"
 mkdir -p "$GOLANG126_FEED_DIR"
 cp -rf "$GOLANG126_SRC_DIR/." "$GOLANG126_FEED_DIR/"
+
 ./scripts/feeds update -f packages
 ./scripts/feeds install golang1.26
 
-# passwall daed use golang1.26/host
-find package/dae package/passwall-packages -name "Makefile" -type f -exec sed -i \
-  -e 's|\<golang/golang-package.mk\>|golang1.26/golang-package.mk|g' \
-  -e 's|\<golang/host\>|golang1.26/host|g' {} +
+# daed 使用 golang1.26/host
+# PassWall 已移除，不再扫描 package/passwall-packages
+if [ -d package/dae ]; then
+  find package/dae -name "Makefile" -type f -exec sed -i \
+    -e 's|\<golang/golang-package.mk\>|golang1.26/golang-package.mk|g' \
+    -e 's|\<golang/host\>|golang1.26/host|g' {} +
+fi
 
 # 同步仓库内维护的 patches 目录到 OpenWrt 源码树
 if [ -d "$GITHUB_WORKSPACE/patches/6.6" ]; then
